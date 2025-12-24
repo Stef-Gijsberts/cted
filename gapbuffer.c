@@ -5,9 +5,9 @@
 
 #include "sequence.h"
 
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct sequence {
 	char *buf;
@@ -17,8 +17,7 @@ struct sequence {
 	int cap;
 };
 
-static void move_gap(struct sequence *seq, size_t pos)
-{
+static void move_gap(struct sequence *seq, size_t pos) {
 	/* move left */
 	while (pos < seq->gap_left)
 		seq->buf[seq->gap_right--] = seq->buf[--seq->gap_left];
@@ -28,23 +27,21 @@ static void move_gap(struct sequence *seq, size_t pos)
 		seq->buf[seq->gap_left++] = seq->buf[++seq->gap_right];
 }
 
-
-static void grow_gap(struct sequence *seq, int grow_by)
-{
+static void grow_gap(struct sequence *seq, int grow_by) {
 	if (seq->size + grow_by >= seq->cap) {
-		seq->buf = realloc(seq->buf, sizeof(*seq->buf) * (seq->cap + grow_by));
+		seq->buf =
+		    realloc(seq->buf, sizeof(*seq->buf) * (seq->cap + grow_by));
 		seq->cap += grow_by;
 	}
 
-	memmove(&seq->buf[seq->gap_right+grow_by+1], &seq->buf[seq->gap_right+1], seq->size - seq->gap_right);
+	memmove(&seq->buf[seq->gap_right + grow_by + 1],
+		&seq->buf[seq->gap_right + 1], seq->size - seq->gap_right);
 
 	seq->size += grow_by;
 	seq->gap_right += grow_by;
 }
 
-
-enum seq_result sequence_open(struct sequence **ppseq, const char *filename)
-{
+enum seq_result sequence_open(struct sequence **ppseq, const char *filename) {
 	*ppseq = malloc(sizeof(struct sequence));
 	struct sequence *pseq = *ppseq;
 
@@ -57,18 +54,14 @@ enum seq_result sequence_open(struct sequence **ppseq, const char *filename)
 	return SEQ_SUCCESS;
 }
 
-
-enum seq_result sequence_close(struct sequence *seq)
-{
+enum seq_result sequence_close(struct sequence *seq) {
 	free(seq->buf);
 	free(seq);
 
 	return SEQ_SUCCESS;
 }
 
-
-enum seq_result sequence_insert(struct sequence *seq, size_t pos, char c)
-{
+enum seq_result sequence_insert(struct sequence *seq, size_t pos, char c) {
 	if (pos != seq->gap_left)
 		move_gap(seq, pos);
 
@@ -81,9 +74,7 @@ enum seq_result sequence_insert(struct sequence *seq, size_t pos, char c)
 	return SEQ_SUCCESS;
 }
 
-
-enum seq_result sequence_delete(struct sequence *seq, size_t pos)
-{
+enum seq_result sequence_delete(struct sequence *seq, size_t pos) {
 	if (seq->gap_left != pos)
 		move_gap(seq, pos);
 
@@ -91,9 +82,7 @@ enum seq_result sequence_delete(struct sequence *seq, size_t pos)
 	return SEQ_SUCCESS;
 }
 
-
-int sequence_item_at(const struct sequence *seq, size_t pos)
-{
+int sequence_item_at(const struct sequence *seq, size_t pos) {
 	const size_t gap_size = seq->gap_right - seq->gap_left + 1;
 
 	if (pos + gap_size >= seq->size)
@@ -101,7 +90,6 @@ int sequence_item_at(const struct sequence *seq, size_t pos)
 
 	if (pos < seq->gap_left)
 		return seq->buf[pos];
-	else 
+	else
 		return seq->buf[pos + gap_size];
 }
-
