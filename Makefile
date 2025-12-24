@@ -1,9 +1,12 @@
-ted: gapbuffer.o
+ted: ted.o gapbuffer.c
 
 clean:
-	rm -f *.o ted
+	rm -f *.o ted run-tests
 
 format:
 	clang-format -style=file -i *.c *.h
 
-.PHONY: clean format
+test: run-tests
+	./run-tests
+
+.PHONY: clean format test
