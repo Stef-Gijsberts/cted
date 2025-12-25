@@ -18,12 +18,27 @@ void cleanup(struct state *s) {
     fclose(s->fp);
 }
 
+void move_cursor_to_top_left() {
+    printf("\033[H");
+}
+
+void clear_screen() {
+    printf("\033[2J");
+}
+
+void clear_scrollback_buffer() {
+    printf("\033[3J");
+}
+
 void present(struct state *s) {
+    clear_screen();
+    clear_scrollback_buffer();
+    move_cursor_to_top_left();
+    fflush(stdout);
     puts(s->buf);
 }
 
 int main() {
-
     system("stty -icanon -echo");
 
     struct state s = {
@@ -36,9 +51,9 @@ int main() {
     for (;;) {
         int c = getchar();
         
-        if (c == 'p') {
-            present(&s);
-        }
+        // TODO: handle commands
+
+        present(&s);
     }
 
     cleanup(&s);
