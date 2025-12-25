@@ -1,9 +1,12 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<unistd.h>
+#include <sys/ioctl.h>
 
 struct state {
     char buf[1024];
     FILE *fp;
+    size_t cursor;
 };
 
 void init(struct state *s) {
@@ -18,8 +21,11 @@ void cleanup(struct state *s) {
     fclose(s->fp);
 }
 
-void move_cursor_to_top_left() {
-    printf("\033[H");
+/**
+ * Move the cursor. The top left is (1, 1).
+ */
+void move_cursor(int line, int column) {
+    printf("\033[%d;%dH", line, column);
 }
 
 void clear_screen() {
@@ -31,11 +37,22 @@ void clear_scrollback_buffer() {
 }
 
 void present(struct state *s) {
+    struct winsize w;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
+        w.ws_col = 100;
+        w.ws_row = 24;
+    }
+
     clear_screen();
     clear_scrollback_buffer();
-    move_cursor_to_top_left();
-    fflush(stdout);
+    move_cursor(1, 1);
     puts(s->buf);
+
+    move_cursor(w.ws_row, w.ws_col - 10);
+    printf("== %d ==", s->cursor);
+
+    fflush(stdout);
 }
 
 int main() {
@@ -44,6 +61,7 @@ int main() {
     struct state s = {
         .buf = { 0 },
         .fp = NULL,
+        .cursor = 0,
     };
 
     init(&s);
@@ -51,7 +69,12 @@ int main() {
     for (;;) {
         int c = getchar();
         
-        // TODO: handle commands
+        if (c == 'h') {
+            s.cursor--;
+        }
+        if (c == 'l') {
+            s.cursor++;
+        }
 
         present(&s);
     }
