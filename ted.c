@@ -4,25 +4,6 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-enum status { STATUS_INITIAL, STATUS_QUITTING };
-
-struct state {
-	size_t cursor;
-	FILE *fp;
-	enum status status;
-	char buf[1024];
-};
-
-void init(struct state *s) {
-	const char *path = "./text.txt";
-	s->fp = fopen(path, "r");
-
-	size_t n = fread(s->buf, 1, sizeof(s->buf) - 1, s->fp);
-	s->buf[n] = '\0';
-}
-
-void cleanup(struct state *s) { fclose(s->fp); }
-
 typedef struct {
 	int x;
 	int y;
@@ -32,6 +13,8 @@ const Vec2 vec2_origin = {
     .x = 0,
     .y = 0,
 };
+
+void vec2_format(Vec2 self, FILE *f) { fprintf(f, "(%d, %d)", self.x, self.y); }
 
 Vec2 vec2_add(Vec2 l, Vec2 r) {
 	Vec2 result = {
@@ -56,6 +39,25 @@ Vec2 vec2(int x, int y) {
 	};
 	return result;
 }
+
+enum status { STATUS_INITIAL, STATUS_QUITTING };
+
+struct state {
+	Vec2 cursor;
+	FILE *fp;
+	enum status status;
+	char buf[1024];
+};
+
+void init(struct state *s) {
+	const char *path = "./text.txt";
+	s->fp = fopen(path, "r");
+
+	size_t n = fread(s->buf, 1, sizeof(s->buf) - 1, s->fp);
+	s->buf[n] = '\0';
+}
+
+void cleanup(struct state *s) { fclose(s->fp); }
 
 /**
  * Move the cursor. The top left is (1, 1).
@@ -90,9 +92,9 @@ void present(struct state *s) {
 	puts(s->buf);
 
 	move_cursor(vec2_sub(d, vec2(10, 0)));
-	printf("== %d ==", s->cursor);
+	vec2_format(s->cursor, stdout);
 
-	move_cursor(vec2(s->cursor, 0));
+	move_cursor(s->cursor);
 
 	fflush(stdout);
 }
@@ -103,7 +105,7 @@ int main() {
 	struct state s = {
 	    .buf = {0},
 	    .fp = NULL,
-	    .cursor = 0,
+	    .cursor = vec2_origin,
 	    .status = STATUS_INITIAL,
 	};
 
@@ -114,10 +116,16 @@ int main() {
 
 		int c = getchar();
 		if (c == 'h') {
-			s.cursor--;
+			s.cursor = vec2_add(s.cursor, vec2(-1, 0));
+		}
+		if (c == 'j') {
+			s.cursor = vec2_add(s.cursor, vec2(0, 1));
+		}
+		if (c == 'k') {
+			s.cursor = vec2_add(s.cursor, vec2(0, -1));
 		}
 		if (c == 'l') {
-			s.cursor++;
+			s.cursor = vec2_add(s.cursor, vec2(1, 0));
 		}
 		if (c == 'q') {
 			s.status = STATUS_QUITTING;
