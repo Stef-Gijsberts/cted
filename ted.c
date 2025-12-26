@@ -92,7 +92,7 @@ void present(struct state *s) {
 	move_cursor(vec2_sub(d, vec2(10, 0)));
 	printf("== %d ==", s->cursor);
 
-	move_cursor(vec2_origin);
+	move_cursor(vec2(s->cursor, 0));
 
 	fflush(stdout);
 }
@@ -110,8 +110,9 @@ int main() {
 	init(&s);
 
 	while (s.status != STATUS_QUITTING) {
-		int c = getchar();
+		present(&s);
 
+		int c = getchar();
 		if (c == 'h') {
 			s.cursor--;
 		}
@@ -121,8 +122,6 @@ int main() {
 		if (c == 'q') {
 			s.status = STATUS_QUITTING;
 		}
-
-		present(&s);
 	}
 
 	cleanup(&s);
