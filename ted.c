@@ -23,21 +23,54 @@ void init(struct state *s) {
 
 void cleanup(struct state *s) { fclose(s->fp); }
 
+typedef struct {
+	int x;
+	int y;
+} Vec2;
+
+const Vec2 vec2_origin = {
+    .x = 0,
+    .y = 0,
+};
+
+Vec2 vec2_add(Vec2 l, Vec2 r) {
+	Vec2 result = {
+	    .x = l.x + r.x,
+	    .y = l.y + r.y,
+	};
+	return result;
+}
+
+Vec2 vec2_sub(Vec2 l, Vec2 r) {
+	Vec2 result = {
+	    .x = l.x - r.x,
+	    .y = l.y - r.y,
+	};
+	return result;
+}
+
+Vec2 vec2(int x, int y) {
+	Vec2 result = {
+	    .x = x,
+	    .y = y,
+	};
+	return result;
+}
+
 /**
  * Move the cursor. The top left is (1, 1).
  */
-void move_cursor(int row, int column) { printf("\033[%d;%dH", row, column); }
+void move_cursor_row_col(int row, int column) {
+	printf("\033[%d;%dH", row, column);
+}
+
+void move_cursor(Vec2 v) { move_cursor_row_col(v.y + 1, v.x + 1); }
 
 void clear_screen() { printf("\033[2J"); }
 
 void clear_scrollback_buffer() { printf("\033[3J"); }
 
-struct dimensions {
-	int cols;
-	int rows;
-};
-
-struct dimensions get_dimensions() {
+Vec2 get_dimensions() {
 	struct winsize w;
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
@@ -45,23 +78,21 @@ struct dimensions get_dimensions() {
 		w.ws_row = 24;
 	}
 
-	struct dimensions result = {.cols = w.ws_col, .rows = w.ws_row};
-
-	return result;
+	return vec2(w.ws_col, w.ws_row);
 }
 
 void present(struct state *s) {
-	struct dimensions d = get_dimensions();
+	Vec2 d = get_dimensions();
 
 	clear_screen();
 	clear_scrollback_buffer();
-	move_cursor(1, 1);
+	move_cursor(vec2_origin);
 	puts(s->buf);
 
-	move_cursor(d.rows, d.cols - 10);
+	move_cursor(vec2_sub(d, vec2(10, 0)));
 	printf("== %d ==", s->cursor);
 
-	move_cursor(1, s->cursor);
+	move_cursor(vec2_origin);
 
 	fflush(stdout);
 }
