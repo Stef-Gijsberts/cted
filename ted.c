@@ -57,7 +57,7 @@ struct state {
 	const char *path;
 	size_t point;
 	enum status status;
-	char buf[1024];
+	char buf[1024 * 1024];
 };
 
 void state_init(struct state *s) {
