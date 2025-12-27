@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -53,7 +54,7 @@ void status_format(enum status self, FILE *f) {
 }
 
 struct state {
-	Vec2 cursor;
+	size_t point;
 	enum status status;
 	char buf[1024];
 };
@@ -82,6 +83,10 @@ void move_cursor_row_col(int row, int column) {
 
 void move_cursor(Vec2 v) { move_cursor_row_col(v.y + 1, v.x + 1); }
 
+void save_cursor() { printf("\0337"); }
+
+void restore_cursor() { printf("\0338"); }
+
 void clear_screen() { printf("\033[2J"); }
 
 void clear_scrollback_buffer() { printf("\033[3J"); }
@@ -103,27 +108,36 @@ void present(struct state *s) {
 	clear_screen();
 	clear_scrollback_buffer();
 	move_cursor(vec2_origin);
-	puts(s->buf);
+
+	for (size_t i = 0; s->buf[i] != '\0'; i++) {
+		if (i == s->point) {
+			save_cursor();
+		}
+		if (s->buf[i] == '\n') {
+			putchar('\r');
+		}
+		putchar(s->buf[i]);
+	}
 
 	// Write status
-	move_cursor(vec2_sub(d, vec2(16, 0)));
+	move_cursor(vec2_sub(d, vec2(24, 0)));
 	status_format(s->status, stdout);
 
-	// Write cursor
+	// Write point
 	move_cursor(vec2_sub(d, vec2(8, 0)));
-	vec2_format(s->cursor, stdout);
+	printf("%d", s->point);
 
-	move_cursor(s->cursor);
+	restore_cursor();
 
 	fflush(stdout);
 }
 
 int main() {
-	system("stty -icanon -echo");
+	system("stty raw");
 
 	struct state s = {
 	    .buf = {0},
-	    .cursor = vec2_origin,
+	    .point = 0,
 	    .status = STATUS_NORMAL,
 	};
 
@@ -136,36 +150,45 @@ int main() {
 
 		if (s.status == STATUS_NORMAL) {
 			if (c == 'h') {
-				s.cursor = vec2_add(s.cursor, vec2(-1, 0));
-			}
-			if (c == 'j') {
-				s.cursor = vec2_add(s.cursor, vec2(0, 1));
-			}
-			if (c == 'k') {
-				s.cursor = vec2_add(s.cursor, vec2(0, -1));
+				s.point--;
+				continue;
 			}
 			if (c == 'l') {
-				s.cursor = vec2_add(s.cursor, vec2(1, 0));
+				s.point++;
+				continue;
 			}
 			if (c == 'i') {
 				s.status = STATUS_INSERT;
+				continue;
 			}
 			if (c == 'q') {
 				s.status = STATUS_QUITTING;
+				continue;
 			}
 		}
 		if (s.status == STATUS_INSERT) {
-			// TODO: insert normal characters at cursor
-
 			// Escape
 			if (c == '\x1B') {
 				s.status = STATUS_NORMAL;
+				continue;
 			}
+
+			// Move all to the right
+			memmove(&s.buf[s.point + 1], &s.buf[s.point],
+				sizeof(s.buf) - s.point);
+
+			// Insert at the newly created empty spot
+			s.buf[s.point] = c;
+
+			// Move the point
+			s.point++;
+
+			continue;
 		}
 	}
 
 	state_close(&s);
-	system("stty icanon echo");
+	system("stty cooked");
 
 	return 0;
 }
