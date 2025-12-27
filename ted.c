@@ -173,9 +173,22 @@ int main() {
 				continue;
 			}
 
+			// Backspace
+			if ((c == 0x7F) || (c == 0x08)) {
+				if (s.point <= 0) {
+					continue;
+				}
+				// Move all to the left
+				memmove(&s.buf[s.point - 1], &s.buf[s.point],
+					sizeof(s.buf) - s.point - 1);
+				// Move the point
+				s.point--;
+				continue;
+			}
+
 			// Move all to the right
 			memmove(&s.buf[s.point + 1], &s.buf[s.point],
-				sizeof(s.buf) - s.point);
+				sizeof(s.buf) - s.point - 1);
 
 			// Insert at the newly created empty spot
 			s.buf[s.point] = c;

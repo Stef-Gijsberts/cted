@@ -1,3 +1,4 @@
 *.o
 ted
 run-tests
+text.txt
