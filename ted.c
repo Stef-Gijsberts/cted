@@ -54,22 +54,27 @@ void status_format(enum status self, FILE *f) {
 }
 
 struct state {
+	const char *path;
 	size_t point;
 	enum status status;
 	char buf[1024];
 };
 
-const char *path = "./text.txt";
-
 void state_init(struct state *s) {
-	FILE *fp = fopen(path, "r");
+	FILE *fp = fopen(s->path, "r");
+
+	if (fp == NULL) {
+		s->buf[0] = '\0';
+		return;
+	}
+
 	size_t n = fread(s->buf, 1, sizeof(s->buf) - 1, fp);
 	s->buf[n] = '\0';
 	fclose(fp);
 }
 
 void state_close(struct state *s) {
-	FILE *fp = fopen(path, "w");
+	FILE *fp = fopen(s->path, "w");
 	size_t n = fputs(s->buf, fp);
 	fclose(fp);
 }
@@ -132,10 +137,16 @@ void present(struct state *s) {
 	fflush(stdout);
 }
 
-int main() {
+int main(int argc, char **argv) {
+	if (argc <= 1) {
+		puts("USAGE: ted <filename>");
+		return 0;
+	}
+
 	system("stty raw");
 
 	struct state s = {
+	    .path = argv[1],
 	    .buf = {0},
 	    .point = 0,
 	    .status = STATUS_NORMAL,
