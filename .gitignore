@@ -1,4 +1,13 @@
-*.o
-ted
-run-tests
-text.txt
+# Ignore everything by default
+*
+
+# Except source and docs
+!*.c
+!*.h
+!README
+!LICENSE
+
+# And except autotools "Source" templates
+!Makefile.am
+!configure.ac
+
